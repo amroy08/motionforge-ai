@@ -23,10 +23,8 @@ SET
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- ╔══════════════════════════════════════════════════════════════════════════╗
--- ║ 2. Enable Row Level Security on storage.objects                          ║
--- ╚══════════════════════════════════════════════════════════════════════════╝
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Row Level Security is enabled by default on storage.objects in Supabase.
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- Remove duplicate policies if they exist (supports idempotent re-runs)
 DROP POLICY IF EXISTS "Allow active users to read their own media objects" ON storage.objects;
