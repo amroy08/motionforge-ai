@@ -8,7 +8,7 @@
 begin;
 
 -- Initialize pgTAP testing
-select plan(51);
+select plan(49);
 
 -- ── 1. Structural Verification ──────────────────────────────────────────────
 
