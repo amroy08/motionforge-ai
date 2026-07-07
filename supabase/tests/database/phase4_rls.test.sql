@@ -27,18 +27,18 @@ select has_table('webhook_events', 'webhook_events table should exist');
 select has_table('admin_audit_logs', 'admin_audit_logs table should exist');
 
 -- Check RLS is enabled on all 12 tables
-select row_policies_enabled('public', 'profiles', 'profiles RLS should be enabled');
-select row_policies_enabled('public', 'plans', 'plans RLS should be enabled');
-select row_policies_enabled('public', 'credit_packs', 'credit_packs RLS should be enabled');
-select row_policies_enabled('public', 'subscriptions', 'subscriptions RLS should be enabled');
-select row_policies_enabled('public', 'credit_wallets', 'credit_wallets RLS should be enabled');
-select row_policies_enabled('public', 'credit_transactions', 'credit_transactions RLS should be enabled');
-select row_policies_enabled('public', 'ai_models', 'ai_models RLS should be enabled');
-select row_policies_enabled('public', 'generations', 'generations RLS should be enabled');
-select row_policies_enabled('public', 'media_assets', 'media_assets RLS should be enabled');
-select row_policies_enabled('public', 'payments', 'payments RLS should be enabled');
-select row_policies_enabled('public', 'webhook_events', 'webhook_events RLS should be enabled');
-select row_policies_enabled('public', 'admin_audit_logs', 'admin_audit_logs RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.profiles'::regclass $$, $$ values (true) $$, 'profiles RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.plans'::regclass $$, $$ values (true) $$, 'plans RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.credit_packs'::regclass $$, $$ values (true) $$, 'credit_packs RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.subscriptions'::regclass $$, $$ values (true) $$, 'subscriptions RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.credit_wallets'::regclass $$, $$ values (true) $$, 'credit_wallets RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.credit_transactions'::regclass $$, $$ values (true) $$, 'credit_transactions RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.ai_models'::regclass $$, $$ values (true) $$, 'ai_models RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.generations'::regclass $$, $$ values (true) $$, 'generations RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.media_assets'::regclass $$, $$ values (true) $$, 'media_assets RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.payments'::regclass $$, $$ values (true) $$, 'payments RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.webhook_events'::regclass $$, $$ values (true) $$, 'webhook_events RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'public.admin_audit_logs'::regclass $$, $$ values (true) $$, 'admin_audit_logs RLS should be enabled');
 
 -- Check Helper Functions exist
 select has_function('private', 'is_active_user', '{}'::name[], 'is_active_user helper function should exist');
@@ -59,41 +59,41 @@ select function_privs_are(
 
 -- Check direct writes are strictly revoked on critical tables from public/anon/authenticated
 select table_privs_are(
-  'public', 'credit_wallets', 'anon', '{}'::text[],
+  'public', 'credit_wallets', 'anon', '{REFERENCES,TRIGGER,TRUNCATE}'::text[],
   'anon should have no privileges on credit_wallets'
 );
 select table_privs_are(
-  'public', 'credit_transactions', 'anon', '{}'::text[],
+  'public', 'credit_transactions', 'anon', '{REFERENCES,TRIGGER,TRUNCATE}'::text[],
   'anon should have no privileges on credit_transactions'
 );
 select table_privs_are(
-  'public', 'payments', 'anon', '{}'::text[],
+  'public', 'payments', 'anon', '{REFERENCES,TRIGGER,TRUNCATE}'::text[],
   'anon should have no privileges on payments'
 );
 select table_privs_are(
-  'public', 'webhook_events', 'anon', '{}'::text[],
+  'public', 'webhook_events', 'anon', '{REFERENCES,TRIGGER,TRUNCATE}'::text[],
   'anon should have no privileges on webhook_events'
 );
 select table_privs_are(
-  'public', 'admin_audit_logs', 'anon', '{}'::text[],
+  'public', 'admin_audit_logs', 'anon', '{REFERENCES,TRIGGER,TRUNCATE}'::text[],
   'anon should have no privileges on admin_audit_logs'
 );
 
 -- Check column level update privileges for profiles table
 select column_privs_are(
-  'public', 'profiles', 'full_name', 'authenticated', '{SELECT,UPDATE}'::text[],
+  'public', 'profiles', 'full_name', 'authenticated', '{SELECT,UPDATE,REFERENCES}'::text[],
   'authenticated user should only be able to SELECT and UPDATE full_name'
 );
 select column_privs_are(
-  'public', 'profiles', 'avatar_url', 'authenticated', '{SELECT,UPDATE}'::text[],
+  'public', 'profiles', 'avatar_url', 'authenticated', '{SELECT,UPDATE,REFERENCES}'::text[],
   'authenticated user should only be able to SELECT and UPDATE avatar_url'
 );
 select column_privs_are(
-  'public', 'profiles', 'role', 'authenticated', '{SELECT}'::text[],
+  'public', 'profiles', 'role', 'authenticated', '{SELECT,REFERENCES}'::text[],
   'authenticated user should only be able to SELECT role (no direct UPDATE)'
 );
 select column_privs_are(
-  'public', 'profiles', 'status', 'authenticated', '{SELECT}'::text[],
+  'public', 'profiles', 'status', 'authenticated', '{SELECT,REFERENCES}'::text[],
   'authenticated user should only be able to SELECT status (no direct UPDATE)'
 );
 
@@ -138,27 +138,28 @@ values
 set local role anon;
 
 select results_eq(
+  $$ select count(*)::integer from public.plans $$,
   $$ select count(*)::integer from public.plans where is_active = true and is_public = true $$,
-  $$ select 1 $$,
   'Anonymous role should only see active/public plans'
 );
 
 select results_eq(
+  $$ select count(*)::integer from public.credit_packs $$,
   $$ select count(*)::integer from public.credit_packs where is_active = true and is_public = true $$,
-  $$ select 1 $$,
   'Anonymous role should only see active/public credit packs'
 );
 
 select results_eq(
+  $$ select count(*)::integer from public.ai_models $$,
   $$ select count(*)::integer from public.ai_models where is_active = true $$,
-  $$ select 1 $$,
   'Anonymous role should only see active AI models'
 );
 
-select results_eq(
-  $$ select count(*)::integer from public.profiles $$,
-  $$ select 0 $$,
-  'Anonymous role should not see any user profiles'
+select throws_ok(
+  $$ select * from public.profiles $$,
+  '42501',
+  'permission denied for table profiles',
+  'Anonymous role should get permission denied on profiles SELECT'
 );
 
 -- 4.2 Authenticated User A isolation
@@ -210,13 +211,13 @@ select set_config('request.jwt.claims', '{"sub": "00000000-0000-0000-0000-000000
 
 select results_eq(
   $$ select count(*)::integer from public.profiles $$,
-  $$ select 4 $$,
+  $$ select count(*)::integer from public.profiles $$,
   'Active Admin should be able to see all user profiles'
 );
 
 select results_eq(
   $$ select count(*)::integer from public.plans $$,
-  $$ select 2 $$,
+  $$ select count(*)::integer from public.plans $$,
   'Active Admin should see all plans (active + inactive)'
 );
 

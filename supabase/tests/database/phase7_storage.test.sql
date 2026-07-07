@@ -40,7 +40,7 @@ select results_eq(
 -- ╔══════════════════════════════════════════════════════════════════════════╗
 -- ║ 2. Row Level Security on storage.objects                                 ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
-select row_policies_enabled('storage', 'objects', 'storage.objects RLS should be enabled');
+select results_eq($$ select relrowsecurity from pg_class where oid = 'storage.objects'::regclass $$, $$ values (true) $$, 'storage.objects RLS should be enabled');
 
 -- ╔══════════════════════════════════════════════════════════════════════════╗
 -- ║ 3. Policy Existence & Separation Verification                             ║

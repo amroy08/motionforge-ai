@@ -117,7 +117,7 @@ create policy profiles_select_admin on public.profiles
 drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
   for update to authenticated
-  using (auth.uid() = id and private.is_active_user())
+  using (auth.uid() = id)
   with check (auth.uid() = id and private.is_active_user());
 
 -- 3.2 plans policies
